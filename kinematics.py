@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Kinematics using Denavit-Hartenberg parameters
 import numpy as np
 

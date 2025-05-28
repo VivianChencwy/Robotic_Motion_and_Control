@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 
 from kortex_api.TCPTransport import TCPTransport

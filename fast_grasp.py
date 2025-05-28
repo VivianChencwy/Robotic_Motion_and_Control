@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 ###
 # KINOVA (R) KORTEX (TM)
 #
@@ -370,3 +371,4 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
+
