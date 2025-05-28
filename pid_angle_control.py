@@ -47,7 +47,7 @@ def send_gripper_command(base, value):
 
 def check_joint_limits(angles):
     """Check if joint angles are within limits"""
-    limits = np.array([153, 153, 149, 149, 144, 148])  # Maximum angle limits
+    limits = np.array([365, 153, 149, 149, 144, 148])  # Maximum angle limits
     for i, angle in enumerate(angles):
         if abs(angle) > limits[i]:
             print(f"Joint {i+1} angle {angle} exceeds limit {limits[i]}")
@@ -141,24 +141,46 @@ def move_to_angles(base, target_angles, gripper_value=0.0):
             joint_speed.duration = 0
         base.SendJointSpeedsCommand(joint_speeds)
 
+def execute_path(base, path, gripper_value=0.0):
+    """
+    Execute a sequence of joint configurations
+    base: robot control interface
+    path: list of joint angle configurations (list of 6-element arrays)
+    gripper_value: gripper position (0.0 to 1.0)
+    """
+    success = True
+    for target_angles in path:
+        # Convert from radians to degrees
+        angles_deg = np.array(target_angles) * 180.0 / np.pi
+        success &= move_to_angles(base, angles_deg, gripper_value)
+        if not success:
+            print("Failed to reach configuration:", angles_deg)
+            return False
+    return True
+
 def main():
     """
     Main function: setup connection and execute angle control
     Usage: 
-    rosrun final_project pid_angle_control.py --ip IP -u USERNAME -p PASSWORD j1 j2 j3 j4 j5 j6 [gripper]
-    where j1-j6 are joint angles in degrees
-    gripper is gripper position (0.0-1.0, optional)
+    1. Single position control:
+       rosrun final_project pid_angle_control.py --ip IP -u USERNAME -p PASSWORD j1 j2 j3 j4 j5 j6 [gripper]
+       where j1-j6 are joint angles in degrees
+       gripper is gripper position (0.0-1.0, optional)
+    
+    2. Path execution (internal use):
+       This mode is used when called from other scripts like RRT
     """
-    # Create parser
-    parser = argparse.ArgumentParser(description='Control Kinova arm joint angles with PID')
-    # Connection arguments
-    parser.add_argument("--ip", type=str, help="IP address of destination", default="192.168.1.10")
-    parser.add_argument("-u", "--username", type=str, help="username to login", default="admin")
-    parser.add_argument("-p", "--password", type=str, help="password to login", default="admin")
-    # Joint angles and gripper arguments
-    parser.add_argument("joint_angles", type=float, nargs=6, help="6 joint angles in degrees")
-    parser.add_argument("gripper", type=float, nargs='?', default=0.0, 
-                       help="gripper position (0.0-1.0)")
+    # Check if being called from command line or another script
+    if len(sys.argv) > 1:  # Command line mode
+        parser = argparse.ArgumentParser(description='Control Kinova arm joint angles with PID')
+        # Connection arguments
+        parser.add_argument("--ip", type=str, help="IP address of destination", default="192.168.1.10")
+        parser.add_argument("-u", "--username", type=str, help="username to login", default="admin")
+        parser.add_argument("-p", "--password", type=str, help="password to login", default="admin")
+        # Joint angles and gripper arguments
+        parser.add_argument("joint_angles", type=float, nargs=6, help="6 joint angles in degrees")
+        parser.add_argument("gripper", type=float, nargs='?', default=0.0, 
+                           help="gripper position (0.0-1.0)")
 
     try:
         args = parser.parse_args()
